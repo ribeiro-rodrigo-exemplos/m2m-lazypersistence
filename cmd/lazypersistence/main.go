@@ -6,18 +6,18 @@ import (
 )
 
 func main() {
-	consumidor := mensageria.Consumidor{
-		Host:    "localhost",
-		Porta:   5672,
-		Usuario: "guest",
-		Senha:   "guest",
+	consumer := mensageria.Consumer{
+		Host:     "localhost",
+		Port:     5672,
+		User:     "guest",
+		Password: "guest",
 	}
 
-	defer consumidor.Desconectar()
+	defer consumer.Disconnect()
 
-	consumidor.Conectar(func(mensagem mensageria.Mensagem) {
-		fmt.Println(mensagem.Get())
-		mensagem.Confirmar()
+	consumer.Connect(func(message mensageria.Message) {
+		fmt.Println(message.Payload)
+		//mensagem.Confirmar()
 	})
 
 	foreaver := make(chan bool)
