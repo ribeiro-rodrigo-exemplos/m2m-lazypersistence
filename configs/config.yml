@@ -3,3 +3,6 @@ rabbitmq:
   port: 5672
   user: guest
   password: guest
+
+maxmessages: 10
+timememory: 10
