@@ -42,22 +42,26 @@ func eventRouter() {
 			dispatcher.Dispatch(repository)
 		case message := <-channelMessage:
 			saveMessage(message)
+			evaluateDispatch()
 		}
 	}
 }
 
 func dispatcherListener() {
 	for {
-		time.Sleep(time.Second * 3)
+		time.Sleep(time.Second * 30)
 		signalDispatcher <- struct{}{}
 	}
 }
 
 func saveMessage(message mensageria.Message) {
-	fmt.Println(message.Payload)
+	fmt.Println("------", message.Payload)
 	messagesPendings := repository[message.Headers.Action]
 	messagesPendings = append(messagesPendings, message)
 	repository[message.Headers.Action] = messagesPendings
+}
+
+func evaluateDispatch() {
 	if len(repository) >= maxMessages {
 		dispatcher.Dispatch(repository)
 	}

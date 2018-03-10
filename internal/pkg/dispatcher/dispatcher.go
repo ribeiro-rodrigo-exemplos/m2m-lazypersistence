@@ -5,7 +5,7 @@ import (
 	"m2m-lazypersistence/internal/pkg/mensageria"
 )
 
-// Dispatch - Salva as mensagens armazenadas no map no mongodb
+// Dispatch - Salva as mensagens no mongodb
 func Dispatch(repository map[string][]mensageria.Message) {
 	fmt.Println("signal - gravando dados no mongo")
 }

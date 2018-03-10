@@ -58,8 +58,33 @@ func (c *Consumer) openChannel(listener Listener) {
 		c.connection.channel = channel
 	}
 
-	messages, err := c.connection.channel.Consume(
+	messages := c.createConsumer()
+
+	go func() {
+		for m := range messages {
+			message := Message{delivery: m}
+			json.Unmarshal(m.Body, &message)
+			listener(message)
+		}
+	}()
+}
+
+func (c *Consumer) createConsumer() (messages <-chan amqp.Delivery) {
+	queue, err := c.connection.channel.QueueDeclare(
 		fila,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	if err != nil {
+		log.Fatal("Erro ao criar fila")
+	}
+
+	messages, err = c.connection.channel.Consume(
+		queue.Name,
 		"",
 		false,
 		false,
@@ -69,14 +94,8 @@ func (c *Consumer) openChannel(listener Listener) {
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar consumir no lazypersistence")
+		log.Fatal("Erro ao criar consumidor no lazypersistence")
 	}
 
-	go func() {
-		for m := range messages {
-			message := Message{delivery: m}
-			json.Unmarshal(m.Body, &message)
-			listener(message)
-		}
-	}()
+	return
 }
