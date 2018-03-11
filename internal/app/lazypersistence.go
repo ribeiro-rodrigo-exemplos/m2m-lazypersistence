@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-//var repository = make(map[string][]mensageria.Message)
 var repository repo.Repository
 var channelMessage = make(chan mensageria.Message)
 var signalDispatcher = make(chan struct{})
@@ -49,7 +48,6 @@ func Bootstrap(config cfg.Config) {
 
 func eventRouter() {
 	for {
-
 		select {
 		case <-signalDispatcher:
 			dispatchMassages()

@@ -2,16 +2,11 @@ package dispatch
 
 import (
 	"fmt"
-	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"strconv"
 
 	"gopkg.in/mgo.v2"
 )
-
-var methods = map[string]method{
-	"insert": insert,
-}
 
 // Dispatcher - Responsável pelo despacho das mensagens
 type Dispatcher struct {
@@ -20,8 +15,6 @@ type Dispatcher struct {
 	Database string
 	session  *mgo.Session
 }
-
-type method func(*Dispatcher, repo.Operation) error
 
 // Dispatch - Salva as mensagens no mongodb
 func (d *Dispatcher) Dispatch(repository repo.Repository) {
@@ -37,37 +30,24 @@ func (d *Dispatcher) Dispatch(repository repo.Repository) {
 		}
 	}
 
-	go func() {
+	go d.execute(repository)
+}
 
-		repository.Each(func(key string, operation repo.Operation) {
-			method := methods[operation.Action]
-			err := method(d, operation)
+func (d *Dispatcher) execute(repository repo.Repository) {
+	repository.Each(func(key string, operation repo.Operation) {
+		err := executeAction(d, operation)
 
-			if err != nil {
-				operation.Reject()
-			} else {
-				operation.Confirm()
-			}
-		})
-	}()
+		if err != nil {
+			operation.Reject()
+		} else {
+			operation.Confirm()
+		}
+	})
 }
 
 func (d *Dispatcher) openSession() error {
 	session, err := mgo.Dial(d.Host + ":" + strconv.Itoa(d.Port))
 	d.session = session
 
-	return err
-}
-
-func insert(dispatcher *Dispatcher, operation repo.Operation) error {
-
-	var payloads []interface{}
-
-	operation.Messages.Each(func(message mensageria.Message) {
-		payloads = append(payloads, message.Payload)
-	})
-
-	collection := dispatcher.session.DB(dispatcher.Database).C(operation.Collection)
-	err := collection.Insert(payloads...)
 	return err
 }
