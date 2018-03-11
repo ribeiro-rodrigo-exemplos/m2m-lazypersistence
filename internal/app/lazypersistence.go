@@ -3,21 +3,27 @@ package app
 import (
 	"fmt"
 	cfg "m2m-lazypersistence/internal/pkg/config"
-	"m2m-lazypersistence/internal/pkg/dispatcher"
+	"m2m-lazypersistence/internal/pkg/dispatch"
 	"m2m-lazypersistence/internal/pkg/mensageria"
+	"m2m-lazypersistence/internal/pkg/repo"
 	"time"
 )
 
-var repository = make(map[string][]mensageria.Message)
+//var repository = make(map[string][]mensageria.Message)
+var repository repo.Repository
 var channelMessage = make(chan mensageria.Message)
 var signalDispatcher = make(chan struct{})
 
 var maxMessages int
+var retentionTime int
+
+var dispatcher dispatch.Dispatcher
 
 // Bootstrap - Função Inicial do projeto
 func Bootstrap(config cfg.Config) {
 
 	maxMessages = config.MaxMessages
+	retentionTime = config.RetentionSeconds
 
 	consumer := mensageria.Consumer{
 		Host:     config.RabbitMQ.Host,
@@ -26,7 +32,14 @@ func Bootstrap(config cfg.Config) {
 		Password: config.RabbitMQ.Password,
 	}
 
+	dispatcher = dispatch.Dispatcher{
+		Host:     config.MongoDB.Host,
+		Port:     config.MongoDB.Port,
+		Database: config.MongoDB.Database,
+	}
+
 	consumer.Connect(func(message mensageria.Message) {
+		fmt.Println("------", message.Payload)
 		channelMessage <- message
 	})
 
@@ -39,9 +52,9 @@ func eventRouter() {
 
 		select {
 		case <-signalDispatcher:
-			dispatcher.Dispatch(repository)
+			dispatchMassages()
 		case message := <-channelMessage:
-			saveMessage(message)
+			repository.Save(message)
 			evaluateDispatch()
 		}
 	}
@@ -49,29 +62,19 @@ func eventRouter() {
 
 func dispatcherListener() {
 	for {
-		time.Sleep(time.Second * 30)
+		time.Sleep(time.Second * time.Duration(retentionTime))
 		signalDispatcher <- struct{}{}
 	}
 }
 
-func saveMessage(message mensageria.Message) {
-	fmt.Println("------", message.Payload)
-	messagesPendings := repository[message.Headers.Action]
-	messagesPendings = append(messagesPendings, message)
-	repository[message.Headers.Action] = messagesPendings
+func dispatchMassages() {
+	cloneRepository := repository.Clone()
+	dispatcher.Dispatch(cloneRepository)
+	repository.Clear()
 }
 
 func evaluateDispatch() {
-	if len(repository) >= maxMessages {
-		dispatcher.Dispatch(repository)
-	}
-}
-
-func logarRepositorio() {
-	for chave, valor := range repository {
-		fmt.Println(chave + "**********************")
-		for _, message := range valor {
-			fmt.Println(message.Payload)
-		}
+	if repository.Size() >= maxMessages {
+		dispatchMassages()
 	}
 }

@@ -4,5 +4,10 @@ rabbitmq:
   user: guest
   password: guest
 
+mongodb: 
+  host: localhost 
+  port: 27017
+  database: test
+
 maxmessages: 10
-timememory: 10
+retentionseconds: 120
