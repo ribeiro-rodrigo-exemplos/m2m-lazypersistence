@@ -4,6 +4,8 @@ import (
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"strings"
+
+	"gopkg.in/mgo.v2/bson"
 )
 
 type action func(*Dispatcher, repo.Operation) error
@@ -41,7 +43,18 @@ func insert(dispatcher *Dispatcher, operation repo.Operation) error {
 }
 
 func push(dispatcher *Dispatcher, operation repo.Operation) error {
-	return nil
+	payloads := extractPayload(operation)
+	pushToArray := bson.M{
+		"$push": bson.M{
+			"app": bson.M{
+				"$each": payloads,
+			},
+		},
+	}
+
+	collection := dispatcher.session.DB(dispatcher.Database).C(operation.Collection)
+	err := collection.Update(bson.M{"application": "teste"}, pushToArray)
+	return err
 }
 
 func pull(dispatcher *Dispatcher, operation repo.Operation) error {

@@ -9,5 +9,5 @@ mongodb:
   port: 27017
   database: test
 
-maxmessages: 10
+maxmessages: 1
 retentionseconds: 120
