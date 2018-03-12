@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"log"
 	cfg "m2m-lazypersistence/internal/pkg/config"
 	"m2m-lazypersistence/internal/pkg/dispatch"
 	"m2m-lazypersistence/internal/pkg/mensageria"
@@ -38,7 +38,7 @@ func Bootstrap(config cfg.Config) {
 	}
 
 	consumer.Connect(func(message mensageria.Message) {
-		fmt.Println("------", message.Payload)
+		log.Println("Mensagem recebida:", message.Payload)
 		channelMessage <- message
 	})
 
@@ -61,6 +61,9 @@ func eventRouter() {
 func dispatcherListener() {
 	for {
 		time.Sleep(time.Second * time.Duration(retentionTime))
+
+		log.Println("Tempo de retenção atingido")
+
 		signalDispatcher <- struct{}{}
 	}
 }

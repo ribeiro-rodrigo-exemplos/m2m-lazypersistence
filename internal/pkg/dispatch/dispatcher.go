@@ -2,6 +2,7 @@ package dispatch
 
 import (
 	"fmt"
+	"log"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"strconv"
 
@@ -18,13 +19,13 @@ type Dispatcher struct {
 
 // Dispatch - Salva as mensagens no mongodb
 func (d *Dispatcher) Dispatch(repository repo.Repository) {
-	fmt.Println("Gravando dados no mongo")
+	log.Println("Despejando repositório no mongodb")
 
 	if d.session == nil {
 		err := d.openSession()
 
 		if err != nil {
-			fmt.Println("Erro ao abrir sessão com o mongodb")
+			log.Println("Erro ao abrir sessão com o mongodb")
 			repository.Reject()
 			return
 		}

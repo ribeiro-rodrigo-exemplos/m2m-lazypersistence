@@ -11,3 +11,4 @@ mongodb:
 
 maxmessages: 1
 retentionseconds: 360
+logfile: /home/rodrigo/lazypersistence.log

@@ -36,7 +36,7 @@ func (c *Consumer) Connect(listener Listener) {
 		log.Fatal("Erro na conexão com o rabbitmq")
 	}
 
-	log.Print("Conexão com o rabbitmq aberta")
+	log.Println("Conexão com o rabbitmq aberta")
 
 	c.connection = connection{conn: conn}
 	c.openChannel(listener)
@@ -80,7 +80,7 @@ func (c *Consumer) createConsumer() (messages <-chan amqp.Delivery) {
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar fila")
+		log.Fatal("Erro ao criar fila", fila)
 	}
 
 	messages, err = c.connection.channel.Consume(
@@ -94,7 +94,7 @@ func (c *Consumer) createConsumer() (messages <-chan amqp.Delivery) {
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar consumidor no lazypersistence")
+		log.Fatal("Erro ao criar consumidor para a fila", fila)
 	}
 
 	return
