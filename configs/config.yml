@@ -10,4 +10,4 @@ mongodb:
   database: test
 
 maxmessages: 1
-retentionseconds: 120
+retentionseconds: 360

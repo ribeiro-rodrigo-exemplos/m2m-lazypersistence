@@ -60,6 +60,18 @@ func push(dispatcher *Dispatcher, operation repo.Operation) error {
 }
 
 func pull(dispatcher *Dispatcher, operation repo.Operation) error {
+	payloads := extractPayload(operation)
 
-	return nil
+	pullToArray := bson.M{
+		"$pull": bson.M{
+			operation.Field: bson.M{
+				"$in": payloads,
+			},
+		},
+	}
+
+	collection := dispatcher.session.DB(dispatcher.Database).C(operation.Collection)
+	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), pullToArray)
+
+	return err
 }

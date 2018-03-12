@@ -37,7 +37,7 @@ func (d *Dispatcher) execute(repository repo.Repository) {
 	repository.Each(func(key string, operation repo.Operation) {
 
 		err := executeAction(d, operation)
-
+		fmt.Println(err)
 		if err != nil && err != mgo.ErrNotFound {
 			operation.Reject()
 		} else {
