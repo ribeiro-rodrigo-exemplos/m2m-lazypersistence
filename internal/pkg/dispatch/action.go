@@ -22,13 +22,18 @@ func executeAction(dispatcher *Dispatcher, operation repo.Operation) error {
 	return err
 }
 
-func insert(dispatcher *Dispatcher, operation repo.Operation) error {
-
-	var payloads []interface{}
+func extractPayload(operation repo.Operation) (payloads []interface{}) {
 
 	operation.Messages.Each(func(message mensageria.Message) {
 		payloads = append(payloads, message.Payload)
 	})
+
+	return
+}
+
+func insert(dispatcher *Dispatcher, operation repo.Operation) error {
+
+	payloads := extractPayload(operation)
 
 	collection := dispatcher.session.DB(dispatcher.Database).C(operation.Collection)
 	err := collection.Insert(payloads...)
