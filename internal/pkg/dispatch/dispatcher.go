@@ -35,9 +35,10 @@ func (d *Dispatcher) Dispatch(repository repo.Repository) {
 
 func (d *Dispatcher) execute(repository repo.Repository) {
 	repository.Each(func(key string, operation repo.Operation) {
+
 		err := executeAction(d, operation)
 
-		if err != nil {
+		if err != nil && err != mgo.ErrNotFound {
 			operation.Reject()
 		} else {
 			operation.Confirm()

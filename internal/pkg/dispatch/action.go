@@ -44,16 +44,18 @@ func insert(dispatcher *Dispatcher, operation repo.Operation) error {
 
 func push(dispatcher *Dispatcher, operation repo.Operation) error {
 	payloads := extractPayload(operation)
+
 	pushToArray := bson.M{
 		"$push": bson.M{
-			"app": bson.M{
+			operation.Field: bson.M{
 				"$each": payloads,
 			},
 		},
 	}
 
 	collection := dispatcher.session.DB(dispatcher.Database).C(operation.Collection)
-	err := collection.Update(bson.M{"application": "teste"}, pushToArray)
+	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), pushToArray)
+
 	return err
 }
 

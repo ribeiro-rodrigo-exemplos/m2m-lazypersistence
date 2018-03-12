@@ -14,6 +14,8 @@ type Repository struct {
 type Operation struct {
 	Collection string
 	Action     string
+	Field      string
+	ID         string
 	Messages   OperationDataSet
 }
 
@@ -28,13 +30,15 @@ func (r *Repository) Save(message mensageria.Message) {
 	}
 
 	messageHeaders := message.Headers
-	key := messageHeaders.Collection + messageHeaders.Action
+	key := messageHeaders.Collection + messageHeaders.Action + messageHeaders.ID + messageHeaders.Field
 	operation := r.operations[key]
 
 	if operation == nil {
 		operation = &Operation{
 			Collection: messageHeaders.Collection,
 			Action:     messageHeaders.Action,
+			Field:      messageHeaders.Field,
+			ID:         messageHeaders.ID,
 		}
 	}
 

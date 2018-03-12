@@ -8,6 +8,8 @@ import (
 type Headers struct {
 	Action     string `json:"action"`
 	Collection string `json:"collection"`
+	Field      string `json:"field"`
+	ID         string `json:"id"`
 }
 
 // Message - mensagem consumida do rabbitmq
