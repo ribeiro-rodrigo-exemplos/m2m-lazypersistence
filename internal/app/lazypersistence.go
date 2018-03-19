@@ -10,7 +10,7 @@ import (
 )
 
 var repository repo.Repository
-var channelMessage = make(chan mensageria.Message)
+var channelRequest = make(chan mensageria.RequestPersistence)
 var signalDispatcher = make(chan struct{})
 
 var maxMessages int
@@ -37,9 +37,9 @@ func Bootstrap(config cfg.Config) {
 		Database: config.MongoDB.Database,
 	}
 
-	consumer.Connect(func(message mensageria.Message) {
-		log.Println("Mensagem recebida:", message.Payload)
-		channelMessage <- message
+	consumer.Connect(func(request mensageria.RequestPersistence) {
+		log.Println("Mensagem recebida:", request.Message.Payload)
+		channelRequest <- request
 	})
 
 	go eventRouter()
@@ -51,8 +51,8 @@ func eventRouter() {
 		select {
 		case <-signalDispatcher:
 			dispatchMassages()
-		case message := <-channelMessage:
-			repository.Save(message)
+		case request := <-channelRequest:
+			repository.Save(request)
 			evaluateDispatch()
 		}
 	}

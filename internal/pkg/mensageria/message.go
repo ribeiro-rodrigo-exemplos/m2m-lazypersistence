@@ -4,19 +4,16 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// Headers - Cabeçalhos da mensagem
-type Headers struct {
-	Action     string `json:"action"`
-	Collection string `json:"collection"`
-	Field      string `json:"field"`
-	ID         string `json:"id"`
-}
-
 // Message - mensagem consumida do rabbitmq
 type Message struct {
-	Headers  Headers     `json:"headers"`
-	Payload  interface{} `json:"payload"`
+	Payload  interface{}
 	delivery amqp.Delivery
+}
+
+// RequestPersistence - estrutura que representa uma requisição de persistencia
+type RequestPersistence struct {
+	Message Message
+	Headers map[string]interface{}
 }
 
 // Confirm - confirma processamento da mensagem para o rabbitmq

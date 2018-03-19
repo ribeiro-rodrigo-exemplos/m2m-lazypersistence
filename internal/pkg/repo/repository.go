@@ -23,26 +23,27 @@ type Operation struct {
 type OperationDataSet []mensageria.Message
 
 //Save - Armazena a mensagem em memoria
-func (r *Repository) Save(message mensageria.Message) {
+func (r *Repository) Save(request mensageria.RequestPersistence) {
 
 	if r.operations == nil {
 		r.operations = map[string]*Operation{}
 	}
 
-	messageHeaders := message.Headers
-	key := messageHeaders.Collection + messageHeaders.Action + messageHeaders.ID + messageHeaders.Field
+	collection, action, id, field := extractHeaders(request.Headers)
+
+	key := collection + action + id + field
 	operation := r.operations[key]
 
 	if operation == nil {
 		operation = &Operation{
-			Collection: messageHeaders.Collection,
-			Action:     messageHeaders.Action,
-			Field:      messageHeaders.Field,
-			ID:         messageHeaders.ID,
+			Collection: collection,
+			Action:     action,
+			Field:      field,
+			ID:         id,
 		}
 	}
 
-	operation.Messages = append(operation.Messages, message)
+	operation.Messages = append(operation.Messages, request.Message)
 	r.operations[key] = operation
 }
 
@@ -114,4 +115,24 @@ func (r *Repository) Logger() {
 			fmt.Println(it.Payload)
 		})
 	})
+}
+
+func extractHeaders(headers map[string]interface{}) (collection, action, id, field string) {
+
+	collection = extract(headers["collection"])
+	action = extract(headers["action"])
+	id = extract(headers["id"])
+	field = extract(headers["field"])
+
+	return
+}
+
+func extract(value interface{}) string {
+	v, ok := value.(string)
+
+	if ok {
+		return v
+	}
+
+	return ""
 }

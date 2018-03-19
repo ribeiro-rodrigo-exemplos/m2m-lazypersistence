@@ -20,7 +20,7 @@ type Consumer struct {
 }
 
 // Listener - chamado quando uma mensagem for recebida
-type Listener func(message Message)
+type Listener func(request RequestPersistence)
 
 type connection struct {
 	conn    *amqp.Connection
@@ -63,8 +63,9 @@ func (c *Consumer) openChannel(listener Listener) {
 	go func() {
 		for m := range messages {
 			message := Message{delivery: m}
-			json.Unmarshal(m.Body, &message)
-			listener(message)
+			json.Unmarshal(m.Body, &message.Payload)
+			request := RequestPersistence{Message: message, Headers: m.Headers}
+			listener(request)
 		}
 	}()
 }
