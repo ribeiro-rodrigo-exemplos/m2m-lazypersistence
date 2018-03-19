@@ -9,6 +9,6 @@ mongodb:
   port: 27017
   database: test
 
-maxmessages: 1
-retentionseconds: 360
+maxmessages: 30
+retentionseconds: 30
 logfile: /home/rodrigo/lazypersistence.log
