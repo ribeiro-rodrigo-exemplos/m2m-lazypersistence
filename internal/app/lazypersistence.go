@@ -24,23 +24,13 @@ func Bootstrap(config cfg.Config) {
 	maxMessages = config.MaxMessages
 	retentionTime = config.RetentionSeconds
 
-	consumer := mensageria.Consumer{
-		Host:     config.RabbitMQ.Host,
-		Port:     config.RabbitMQ.Port,
-		User:     config.RabbitMQ.User,
-		Password: config.RabbitMQ.Password,
-	}
+	createConsumers(config)
 
 	dispatcher = dispatch.Dispatcher{
 		Host:     config.MongoDB.Host,
 		Port:     config.MongoDB.Port,
 		Database: config.MongoDB.Database,
 	}
-
-	consumer.Connect(func(request mensageria.RequestPersistence) {
-		log.Println("Mensagem recebida:", request.Message.Payload)
-		channelRequest <- request
-	})
 
 	go eventRouter()
 	go dispatcherListener()
@@ -78,4 +68,24 @@ func evaluateDispatch() {
 	if repository.Size() >= maxMessages {
 		dispatchMassages()
 	}
+}
+
+func createConsumers(config cfg.Config) {
+
+	for _, queueNames := range config.RabbitMQ.Queues {
+		consumer := mensageria.Consumer{
+			Host:     config.RabbitMQ.Host,
+			Port:     config.RabbitMQ.Port,
+			User:     config.RabbitMQ.User,
+			Password: config.RabbitMQ.Password,
+			Queue:    queueNames,
+		}
+
+		consumer.Connect(listener)
+	}
+}
+
+func listener(request mensageria.RequestPersistence) {
+	log.Println("Mensagem recebida:", request.Message.Payload)
+	channelRequest <- request
 }

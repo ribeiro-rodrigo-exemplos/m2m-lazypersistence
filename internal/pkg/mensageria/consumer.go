@@ -16,6 +16,7 @@ type Consumer struct {
 	Port       int
 	User       string
 	Password   string
+	Queue      string
 	connection connection
 }
 
@@ -36,7 +37,7 @@ func (c *Consumer) Connect(listener Listener) {
 		log.Fatal("Erro na conexão com o rabbitmq")
 	}
 
-	log.Println("Conexão com o rabbitmq aberta")
+	log.Println("Conexão com o rabbitmq aberta na fila", c.Queue)
 
 	c.connection = connection{conn: conn}
 	c.openChannel(listener)

@@ -6,10 +6,11 @@ type Config struct {
 	RetentionSeconds int    `default:"30"`
 	LogFile          string `required:"false"`
 	RabbitMQ         struct {
-		Host     string `default:"localhost"`
-		Port     int    `default:"5672"`
-		User     string `default:"guest"`
-		Password string `default:"guest"`
+		Host     string   `default:"localhost"`
+		Port     int      `default:"5672"`
+		User     string   `default:"guest"`
+		Password string   `default:"guest"`
+		Queues   []string `required:"true"`
 	}
 	MongoDB struct {
 		Host     string `default:"localhost"`

@@ -3,6 +3,9 @@ rabbitmq:
   port: 5672
   user: guest
   password: guest
+  queues:
+    - lazypersistence
+    - transmissoes
 
 mongodb: 
   host: localhost 
