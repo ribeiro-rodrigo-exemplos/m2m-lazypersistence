@@ -8,8 +8,6 @@ import (
 	"github.com/streadway/amqp"
 )
 
-const fila = "lazypersistence"
-
 // Consumer - Consumidor de mensagens do Rabbitmq
 type Consumer struct {
 	Host       string
@@ -96,7 +94,7 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (mess
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar fila", fila)
+		log.Fatal("Erro ao criar fila", queueName)
 	}
 
 	messages, err = channel.Consume(
@@ -110,7 +108,7 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (mess
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar consumidor para a fila", fila)
+		log.Fatal("Erro ao criar consumidor para a fila", queue.Name)
 	}
 
 	return
