@@ -17,6 +17,7 @@ type Consumer struct {
 	User       string
 	Password   string
 	Queue      string
+	Queues     []string
 	connection connection
 }
 
@@ -24,8 +25,8 @@ type Consumer struct {
 type Listener func(request RequestPersistence)
 
 type connection struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
+	conn     *amqp.Connection
+	channels []*amqp.Channel
 }
 
 // Connect - conecta consumidor ao rabbitmq
@@ -37,43 +38,56 @@ func (c *Consumer) Connect(listener Listener) {
 		log.Fatal("Erro na conexão com o rabbitmq")
 	}
 
-	log.Println("Conexão com o rabbitmq aberta na fila", c.Queue)
+	log.Println("Conexão estabelecida com o rabbitmq")
 
 	c.connection = connection{conn: conn}
-	c.openChannel(listener)
+	c.openChannels(listener)
 }
 
 // Disconnect - desconecta consumidor do rabbitmq
 func (c *Consumer) Disconnect() {
-	c.connection.channel.Close()
+	for _, channel := range c.connection.channels {
+		channel.Close()
+	}
 	c.connection.conn.Close()
+	c.connection.channels = make([]*amqp.Channel, 0)
 }
 
-func (c *Consumer) openChannel(listener Listener) {
+func (c *Consumer) openChannels(listener Listener) {
 
-	if c.connection.channel == nil {
-		channel, err := c.connection.conn.Channel()
-		if err != nil {
-			log.Fatal("Erro ao criar canal no rabbitmq")
-		}
-		c.connection.channel = channel
+	for _, queueName := range c.Queues {
+
+		channel := c.openChannel()
+		messages := c.createConsumer(channel, queueName)
+
+		log.Println("Ouvindo mensagens da fila", queueName)
+
+		go func() {
+			for m := range messages {
+				message := Message{delivery: m}
+				json.Unmarshal(m.Body, &message.Payload)
+				request := RequestPersistence{Message: message, Headers: m.Headers}
+				listener(request)
+			}
+		}()
+
+		c.connection.channels = append(c.connection.channels, channel)
+	}
+}
+
+func (c *Consumer) openChannel() *amqp.Channel {
+
+	channel, err := c.connection.conn.Channel()
+	if err != nil {
+		log.Fatal("Erro ao criar canal no rabbitmq")
 	}
 
-	messages := c.createConsumer()
-
-	go func() {
-		for m := range messages {
-			message := Message{delivery: m}
-			json.Unmarshal(m.Body, &message.Payload)
-			request := RequestPersistence{Message: message, Headers: m.Headers}
-			listener(request)
-		}
-	}()
+	return channel
 }
 
-func (c *Consumer) createConsumer() (messages <-chan amqp.Delivery) {
-	queue, err := c.connection.channel.QueueDeclare(
-		fila,
+func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (messages <-chan amqp.Delivery) {
+	queue, err := channel.QueueDeclare(
+		queueName,
 		true,
 		false,
 		false,
@@ -85,7 +99,7 @@ func (c *Consumer) createConsumer() (messages <-chan amqp.Delivery) {
 		log.Fatal("Erro ao criar fila", fila)
 	}
 
-	messages, err = c.connection.channel.Consume(
+	messages, err = channel.Consume(
 		queue.Name,
 		"",
 		false,

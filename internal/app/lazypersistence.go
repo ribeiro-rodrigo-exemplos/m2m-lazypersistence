@@ -10,7 +10,7 @@ import (
 )
 
 var repository repo.Repository
-var channelRequest = make(chan mensageria.RequestPersistence)
+var channelRequest = make(chan mensageria.RequestPersistence, 30)
 var signalDispatcher = make(chan struct{})
 
 var maxMessages int
@@ -59,6 +59,11 @@ func dispatcherListener() {
 }
 
 func dispatchMassages() {
+
+	if repository.Size() == 0 {
+		return
+	}
+
 	cloneRepository := repository.Clone()
 	dispatcher.Dispatch(cloneRepository)
 	repository.Clear()
@@ -72,17 +77,15 @@ func evaluateDispatch() {
 
 func createConsumers(config cfg.Config) {
 
-	for _, queueNames := range config.RabbitMQ.Queues {
-		consumer := mensageria.Consumer{
-			Host:     config.RabbitMQ.Host,
-			Port:     config.RabbitMQ.Port,
-			User:     config.RabbitMQ.User,
-			Password: config.RabbitMQ.Password,
-			Queue:    queueNames,
-		}
-
-		consumer.Connect(listener)
+	consumer := mensageria.Consumer{
+		Host:     config.RabbitMQ.Host,
+		Port:     config.RabbitMQ.Port,
+		User:     config.RabbitMQ.User,
+		Password: config.RabbitMQ.Password,
+		Queues:   config.RabbitMQ.Queues,
 	}
+
+	consumer.Connect(listener)
 }
 
 func listener(request mensageria.RequestPersistence) {
