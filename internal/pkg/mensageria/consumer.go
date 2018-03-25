@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/streadway/amqp"
 )
@@ -33,12 +34,17 @@ func (c *Consumer) Connect(listener Listener) {
 	conn, err := amqp.Dial(url)
 
 	if err != nil {
-		log.Fatal("Erro na conexão com o rabbitmq")
+		log.Println("Erro na conexão com o rabbitmq")
+		go c.reconnect(listener)
+		return
 	}
 
 	log.Println("Conexão estabelecida com o rabbitmq")
 
 	c.connection = connection{conn: conn}
+
+	c.startCloseListener(listener)
+
 	c.openChannels(listener)
 }
 
@@ -112,4 +118,22 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (mess
 	}
 
 	return
+}
+
+func (c *Consumer) startCloseListener(listener Listener) {
+
+	channelClose := make(chan *amqp.Error)
+	c.connection.conn.NotifyClose(channelClose)
+
+	go func() {
+		m := <-channelClose
+		log.Println(m)
+		c.reconnect(listener)
+	}()
+}
+
+func (c *Consumer) reconnect(listener Listener) {
+	c.Disconnect()
+	time.Sleep(time.Second * 5)
+	c.Connect(listener)
 }
