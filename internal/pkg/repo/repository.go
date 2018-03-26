@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"m2m-lazypersistence/internal/pkg/mensageria"
 )
 
@@ -12,6 +11,7 @@ type Repository struct {
 
 //Operation - Representa uma operação sobre um conjunto de dados
 type Operation struct {
+	Database   string
 	Collection string
 	Action     string
 	Field      string
@@ -29,13 +29,14 @@ func (r *Repository) Save(request mensageria.RequestPersistence) {
 		r.operations = map[string]*Operation{}
 	}
 
-	collection, action, id, field := extractHeaders(request.Headers)
+	database, collection, action, id, field := extractHeaders(request.Headers)
 
-	key := collection + action + id + field
+	key := database + collection + action + id + field
 	operation := r.operations[key]
 
 	if operation == nil {
 		operation = &Operation{
+			Database:   database,
 			Collection: collection,
 			Action:     action,
 			Field:      field,
@@ -107,18 +108,9 @@ func (os *Operation) Confirm() {
 	})
 }
 
-//Logger - Loga as mensagens
-func (r *Repository) Logger() {
-	r.Each(func(_ string, operation Operation) {
-		fmt.Println(operation.Collection, "-", operation.Action, "***********")
-		operation.Messages.Each(func(it mensageria.Message) {
-			fmt.Println(it.Payload)
-		})
-	})
-}
+func extractHeaders(headers map[string]interface{}) (database, collection, action, id, field string) {
 
-func extractHeaders(headers map[string]interface{}) (collection, action, id, field string) {
-
+	database = extract(headers["database"])
 	collection = extract(headers["collection"])
 	action = extract(headers["action"])
 	id = extract(headers["id"])
