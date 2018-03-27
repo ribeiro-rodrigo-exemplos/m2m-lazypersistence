@@ -15,7 +15,7 @@ const productionEnv = "PRODUCTION"
 
 func configLog(config config.Config, environmentFlag string) {
 
-	if environmentFlag == productionEnv || os.Getenv("ENVIRONMENT") == productionEnv {
+	if environmentFlag == productionEnv || os.Getenv("M2M-ENVIRONMENT") == productionEnv {
 		log.SetOutput(&lumberjack.Logger{
 			Filename:   config.LogFile,
 			MaxSize:    1,
@@ -36,7 +36,7 @@ func loadConfig(configLocation string) config.Config {
 
 func loadFlags() (string, string) {
 	configLocation := flag.String("config-location", "./configs/config.yml", "a string")
-	environment := flag.String("environment", "DEV", "a string")
+	environment := flag.String("m2m-environment", "DEVELOPMENT", "a string")
 	flag.Parse()
 
 	return *configLocation, *environment
