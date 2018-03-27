@@ -1,0 +1,1 @@
+docker build --build-arg PROJECT=m2m-lazypersistence --build-arg COMMAND="lazypersistence -config-location=/go/bin/config.yml" -t m2m-lazy .
