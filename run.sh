@@ -1,1 +1,1 @@
-docker run -it --rm m2m-lazy
+docker run -it --rm m2msolutions-docker.jfrog.io/m2m-lazypersistence:1.0.0
