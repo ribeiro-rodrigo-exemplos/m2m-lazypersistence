@@ -1,4 +1,4 @@
-FROM m2msolutions-docker.jfrog.io/m2m-go-alpine:1.0.0
+FROM m2msolutions-docker.jfrog.io/m2m-golang-1-9-alpine:1.0.0
 
 
 ARG PROJECT
