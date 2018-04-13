@@ -7,6 +7,7 @@ import (
 //Repository - Responsavel por armazenar as mensagens em memória temporariamente
 type Repository struct {
 	operations map[string]*Operation
+	size       int
 }
 
 //Operation - Representa uma operação sobre um conjunto de dados
@@ -46,6 +47,7 @@ func (r *Repository) Save(request mensageria.RequestPersistence) {
 
 	operation.Messages = append(operation.Messages, request.Message)
 	r.operations[key] = operation
+	r.size++
 }
 
 //Each - Itera as operações armazenadas no repository
@@ -66,7 +68,7 @@ func (r *Repository) Reject() {
 
 //Size - Quantidade de operações armazenadas no repository
 func (r Repository) Size() int {
-	return len(r.operations)
+	return r.size
 }
 
 //Clone - Clona o repository
@@ -92,6 +94,8 @@ func (r *Repository) Clear() {
 	r.Each(func(key string, _ Operation) {
 		delete(r.operations, key)
 	})
+
+	r.size = 0
 }
 
 //Reject - Rejeita o conjunto de mensagens da operação

@@ -1,6 +1,7 @@
 package dispatch
 
 import (
+	"fmt"
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"strings"
@@ -13,9 +14,10 @@ import (
 type action func(*mgo.Collection, repo.Operation) error
 
 var actions = map[string]action{
-	"INSERT": insert,
-	"PUSH":   push,
-	"PULL":   pull,
+	"INSERT":    insert,
+	"PUSH":      push,
+	"PULL":      pull,
+	"INCREMENT": increment,
 }
 
 func executeAction(dispatcher *Dispatcher, operation repo.Operation) error {
@@ -70,6 +72,38 @@ func pull(collection *mgo.Collection, operation repo.Operation) error {
 	}
 
 	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), pullToArray)
+
+	return err
+}
+
+func increment(collection *mgo.Collection, operation repo.Operation) error {
+	fmt.Println("chamando increment")
+	count := 0
+
+	operation.Messages.Each(func(message mensageria.Message) {
+
+		entry, ok := message.Payload.(map[string]interface{})
+
+		if !ok {
+			return
+		}
+
+		value, ok := entry["count"].(float64)
+
+		if !ok {
+			return
+		}
+
+		count += int(value)
+	})
+
+	incrementToField := bson.M{
+		"$inc": bson.M{
+			operation.Field: count,
+		},
+	}
+
+	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), incrementToField)
 
 	return err
 }
