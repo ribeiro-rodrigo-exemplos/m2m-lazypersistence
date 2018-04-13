@@ -13,5 +13,5 @@ mongodb:
   database: test
 
 maxmessages: 30
-retentionseconds: 30
+retentionseconds: 14
 logfile: /home/rodrigo/lazypersistence.log

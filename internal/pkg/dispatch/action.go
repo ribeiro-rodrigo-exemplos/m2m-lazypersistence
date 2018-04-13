@@ -1,7 +1,6 @@
 package dispatch
 
 import (
-	"fmt"
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"strings"
@@ -77,30 +76,33 @@ func pull(collection *mgo.Collection, operation repo.Operation) error {
 }
 
 func increment(collection *mgo.Collection, operation repo.Operation) error {
-	fmt.Println("chamando increment")
-	count := 0
+
+	increments := bson.M{}
 
 	operation.Messages.Each(func(message mensageria.Message) {
 
-		entry, ok := message.Payload.(map[string]interface{})
+		entries, ok := message.Payload.(map[string]interface{})
 
 		if !ok {
 			return
 		}
 
-		value, ok := entry["count"].(float64)
+		for entryKey, entryValue := range entries {
+			value := entryValue.(float64)
 
-		if !ok {
-			return
+			v, ok := increments[entryKey]
+
+			if !ok {
+				increments[entryKey] = int(value)
+			} else {
+				vConv := v.(int)
+				increments[entryKey] = vConv + int(value)
+			}
 		}
-
-		count += int(value)
 	})
 
 	incrementToField := bson.M{
-		"$inc": bson.M{
-			operation.Field: count,
-		},
+		"$inc": increments,
 	}
 
 	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), incrementToField)
