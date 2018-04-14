@@ -4,8 +4,16 @@ rabbitmq:
   user: guest
   password: guest
   queues:
-    - lazypersistence
-    - transmissoes
+    - queue: 
+      name: lazypersistence
+      exchange: monitriip 
+      exchangetype: topic 
+      routingkey: monitriip.transmissoes
+      dlqname: lazypersistence.dlq
+      durable: true 
+    - queue: 
+      name: transmissoes
+      durable: true
 
 mongodb: 
   host: localhost 

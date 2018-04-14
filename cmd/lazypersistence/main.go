@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"m2m-lazypersistence/internal/app"
 	"m2m-lazypersistence/internal/pkg/config"
@@ -48,6 +49,8 @@ func main() {
 
 	config := loadConfig(configLocation)
 	configLog(config, environmentFlag)
+
+	fmt.Println(config.RabbitMQ.Queues)
 
 	app.Bootstrap(config)
 

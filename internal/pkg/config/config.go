@@ -6,15 +6,25 @@ type Config struct {
 	RetentionSeconds int    `default:"30"`
 	LogFile          string `required:"false"`
 	RabbitMQ         struct {
-		Host     string   `default:"localhost"`
-		Port     int      `default:"5672"`
-		User     string   `default:"guest"`
-		Password string   `default:"guest"`
-		Queues   []string `required:"true"`
+		Host     string        `default:"localhost"`
+		Port     int           `default:"5672"`
+		User     string        `default:"guest"`
+		Password string        `default:"guest"`
+		Queues   []QueueConfig `required:"true"`
 	}
 	MongoDB struct {
 		Host     string `default:"localhost"`
 		Port     int    `default:"27017"`
 		Database string `required:"true"`
 	}
+}
+
+// QueueConfig - configuração das filas
+type QueueConfig struct {
+	Name         string
+	Exchange     string
+	ExchangeType string
+	RoutingKey   string
+	DlqName      string
+	Durable      bool
 }

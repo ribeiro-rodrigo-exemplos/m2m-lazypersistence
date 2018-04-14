@@ -3,6 +3,7 @@ package mensageria
 import (
 	"encoding/json"
 	"log"
+	"m2m-lazypersistence/internal/pkg/config"
 	"strconv"
 	"time"
 
@@ -16,7 +17,7 @@ type Consumer struct {
 	User       string
 	Password   string
 	Queue      string
-	Queues     []string
+	Queues     []config.QueueConfig
 	connection connection
 }
 
@@ -59,12 +60,12 @@ func (c *Consumer) Disconnect() {
 
 func (c *Consumer) openChannels(listener Listener) {
 
-	for _, queueName := range c.Queues {
+	for _, queue := range c.Queues {
 
 		channel := c.openChannel()
-		messages := c.createConsumer(channel, queueName)
+		messages := c.createConsumer(channel, queue)
 
-		log.Println("Ouvindo mensagens da fila", queueName)
+		log.Println("Ouvindo mensagens da fila", queue.Name)
 
 		go func() {
 			for m := range messages {
@@ -89,10 +90,11 @@ func (c *Consumer) openChannel() *amqp.Channel {
 	return channel
 }
 
-func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (messages <-chan amqp.Delivery) {
+func (c *Consumer) createConsumer(channel *amqp.Channel, queueCfg config.QueueConfig) (messages <-chan amqp.Delivery) {
+
 	queue, err := channel.QueueDeclare(
-		queueName,
-		true,
+		queueCfg.Name,
+		queueCfg.Durable,
 		false,
 		false,
 		false,
@@ -100,7 +102,35 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueName string) (mess
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar fila", queueName)
+		log.Fatal("Erro ao criar fila ", queueCfg.Name)
+	}
+
+	if queueCfg.Exchange != "" {
+		err = channel.ExchangeDeclare(
+			queueCfg.Exchange,
+			queueCfg.ExchangeType,
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+
+		if err != nil {
+			log.Fatalf("Erro ao criar exchange %s no rabbitmq", queueCfg.Exchange)
+		}
+
+		err = channel.QueueBind(
+			queue.Name,
+			queueCfg.RoutingKey,
+			queueCfg.Exchange,
+			false,
+			nil,
+		)
+
+		if err != nil {
+			log.Fatalf("Erro ao realizar bind entre o exchange %s e a fila %s", queueCfg.Exchange, queue.Name)
+		}
 	}
 
 	messages, err = channel.Consume(
