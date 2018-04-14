@@ -3,6 +3,8 @@ package dispatch
 import (
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
+	"m2m-lazypersistence/internal/pkg/util"
+	"reflect"
 	"strings"
 
 	"gopkg.in/mgo.v2"
@@ -88,15 +90,38 @@ func increment(collection *mgo.Collection, operation repo.Operation) error {
 		}
 
 		for entryKey, entryValue := range entries {
+
 			value := entryValue.(float64)
 
 			v, ok := increments[entryKey]
 
 			if !ok {
-				increments[entryKey] = int(value)
+				if util.CheckDecimal(value) {
+					increments[entryKey] = value
+				} else {
+					increments[entryKey] = int(value)
+				}
+
+				continue
+			}
+
+			var vConv float64
+
+			if reflect.TypeOf(v) == reflect.TypeOf(1.0) {
+				vConv = v.(float64)
 			} else {
-				vConv := v.(int)
-				increments[entryKey] = vConv + int(value)
+				vConv = float64(v.(int))
+			}
+
+			if util.CheckDecimal(vConv) {
+				increments[entryKey] = vConv + value
+				continue
+			}
+
+			if util.CheckDecimal(value) {
+				increments[entryKey] = float64(vConv) + float64(value)
+			} else {
+				increments[entryKey] = int(vConv) + int(value)
 			}
 		}
 	})
