@@ -35,7 +35,7 @@ func (c *Consumer) Connect(listener Listener) {
 	conn, err := amqp.Dial(url)
 
 	if err != nil {
-		log.Println("Erro na conexão com o rabbitmq")
+		log.Println("Erro na conexão com o rabbitmq -", err)
 		go c.reconnect(listener)
 		return
 	}
@@ -70,7 +70,14 @@ func (c *Consumer) openChannels(listener Listener) {
 		go func() {
 			for m := range messages {
 				message := Message{delivery: m}
-				json.Unmarshal(m.Body, &message.Payload)
+				err := json.Unmarshal(m.Body, &message.Payload)
+
+				if err != nil {
+					log.Printf("Erro ao deserializar mensagem %s\n", err)
+					message.Discard()
+					continue
+				}
+
 				request := RequestPersistence{Message: message, Headers: m.Headers}
 				listener(request)
 			}
@@ -84,7 +91,7 @@ func (c *Consumer) openChannel() *amqp.Channel {
 
 	channel, err := c.connection.conn.Channel()
 	if err != nil {
-		log.Fatal("Erro ao criar canal no rabbitmq")
+		log.Fatal("Erro ao criar canal no rabbitmq -", err)
 	}
 
 	return channel
@@ -92,33 +99,44 @@ func (c *Consumer) openChannel() *amqp.Channel {
 
 func (c *Consumer) createConsumer(channel *amqp.Channel, queueCfg config.QueueConfig) (messages <-chan amqp.Delivery) {
 
+	var args amqp.Table
+
+	if queueCfg.DlqExchange != "" {
+		args = amqp.Table{
+			"x-dead-letter-exchange":    queueCfg.DlqExchange,
+			"x-dead-letter-routing-key": queueCfg.DlqRoutingKey,
+		}
+		c.createExchange(
+			channel,
+			queueCfg.DlqExchange,
+			queueCfg.DlqExchangeType,
+			nil,
+		)
+	} else {
+		args = nil
+	}
+
 	queue, err := channel.QueueDeclare(
 		queueCfg.Name,
 		queueCfg.Durable,
 		false,
 		false,
 		false,
-		nil,
+		args,
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar fila ", queueCfg.Name)
+		log.Fatalf("Erro ao criar fila %s - %s", queueCfg.Name, err)
 	}
 
 	if queueCfg.Exchange != "" {
-		err = channel.ExchangeDeclare(
+
+		c.createExchange(
+			channel,
 			queueCfg.Exchange,
 			queueCfg.ExchangeType,
-			true,
-			false,
-			false,
-			false,
-			nil,
+			args,
 		)
-
-		if err != nil {
-			log.Fatalf("Erro ao criar exchange %s no rabbitmq", queueCfg.Exchange)
-		}
 
 		err = channel.QueueBind(
 			queue.Name,
@@ -129,7 +147,8 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueCfg config.QueueCo
 		)
 
 		if err != nil {
-			log.Fatalf("Erro ao realizar bind entre o exchange %s e a fila %s", queueCfg.Exchange, queue.Name)
+			log.Fatalf("Erro ao realizar bind entre o exchange %s e a fila %s - %s",
+				queueCfg.Exchange, queue.Name, err)
 		}
 	}
 
@@ -144,7 +163,7 @@ func (c *Consumer) createConsumer(channel *amqp.Channel, queueCfg config.QueueCo
 	)
 
 	if err != nil {
-		log.Fatal("Erro ao criar consumidor para a fila", queue.Name)
+		log.Fatalf("Erro ao criar consumidor para a fila %s - %s", queue.Name, err)
 	}
 
 	return
@@ -166,4 +185,20 @@ func (c *Consumer) reconnect(listener Listener) {
 	c.Disconnect()
 	time.Sleep(time.Second * 5)
 	c.Connect(listener)
+}
+
+func (c *Consumer) createExchange(channel *amqp.Channel, name, kind string, args amqp.Table) {
+	err := channel.ExchangeDeclare(
+		name,
+		kind,
+		true,
+		false,
+		false,
+		false,
+		args,
+	)
+
+	if err != nil {
+		log.Fatalf("Erro ao criar exchange %s no rabbitmq - %s", name, err)
+	}
 }

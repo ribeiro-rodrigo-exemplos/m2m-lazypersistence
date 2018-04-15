@@ -21,10 +21,12 @@ type Config struct {
 
 // QueueConfig - configuração das filas
 type QueueConfig struct {
-	Name         string
-	Exchange     string
-	ExchangeType string
-	RoutingKey   string
-	DlqName      string
-	Durable      bool
+	Name            string
+	Exchange        string
+	ExchangeType    string
+	RoutingKey      string
+	DlqExchange     string
+	DlqExchangeType string
+	DlqRoutingKey   string
+	Durable         bool
 }

@@ -32,6 +32,11 @@ func (r *Repository) Save(request mensageria.RequestPersistence) {
 
 	database, collection, action, id, field := extractHeaders(request.Headers)
 
+	if isNotValidRequest(collection, action) {
+		request.Message.Discard()
+		return
+	}
+
 	key := database + collection + action + id + field
 	operation := r.operations[key]
 
@@ -131,4 +136,8 @@ func extract(value interface{}) string {
 	}
 
 	return ""
+}
+
+func isNotValidRequest(collection, action string) bool {
+	return collection == "" || action == ""
 }

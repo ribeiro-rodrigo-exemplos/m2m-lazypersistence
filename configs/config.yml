@@ -9,7 +9,9 @@ rabbitmq:
       exchange: monitriip 
       exchangetype: topic 
       routingkey: monitriip.transmissoes
-      dlqname: lazypersistence.dlq
+      dlqexchange: lazypersistence.DLQ
+      dlqexchangetype: direct 
+      dlqroutingkey: erros
       durable: true 
     - queue: 
       name: transmissoes

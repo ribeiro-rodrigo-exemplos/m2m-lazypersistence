@@ -21,7 +21,13 @@ func (m *Message) Confirm() {
 	m.delivery.Ack(false)
 }
 
-// Reject - rejeita processamento da mensagem
+// Reject - rejeita processamento da mensagem, fazendo requeue
 func (m *Message) Reject() {
 	m.delivery.Nack(false, true)
+}
+
+/*Discard - descarta mensagem, enviando a mesma para ao dead letter exchange
+caso o mesmo esteja configurado*/
+func (m *Message) Discard() {
+	m.delivery.Nack(false, false)
 }
