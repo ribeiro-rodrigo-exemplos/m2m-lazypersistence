@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"m2m-lazypersistence/internal/app"
 	"m2m-lazypersistence/internal/pkg/config"
@@ -19,7 +18,7 @@ func configLog(config config.Config, environmentFlag string) {
 	if environmentFlag == productionEnv || os.Getenv("M2M-ENVIRONMENT") == productionEnv {
 		log.SetOutput(&lumberjack.Logger{
 			Filename:   config.LogFile,
-			MaxSize:    1,
+			MaxSize:    100,
 			MaxBackups: 14,
 			MaxAge:     28,
 		})
@@ -49,8 +48,6 @@ func main() {
 
 	config := loadConfig(configLocation)
 	configLog(config, environmentFlag)
-
-	fmt.Println(config.RabbitMQ.Queues)
 
 	app.Bootstrap(config)
 
