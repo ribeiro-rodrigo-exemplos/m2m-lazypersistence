@@ -16,6 +16,12 @@ rabbitmq:
     - queue: 
       name: transmissoes
       durable: true
+    - queue: 
+      name: lazypersistence-new
+      exchange: monitriip 
+      exchangetype: topic 
+      routingkey: monitriip.totalizadores
+      durable: true 
 
 mongodb: 
   host: localhost 
@@ -23,5 +29,5 @@ mongodb:
   database: test
 
 maxmessages: 30
-retentionseconds: 30
+retentionseconds: 7
 logfile: /home/rodrigo/lazypersistence.log
