@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"m2m-lazypersistence/internal/pkg/mensageria"
 )
 
@@ -17,6 +19,8 @@ type Operation struct {
 	Action     string
 	Field      string
 	ID         string
+	Condition  string
+	Create     bool
 	Messages   OperationDataSet
 }
 
@@ -30,14 +34,16 @@ func (r *Repository) Save(request mensageria.RequestPersistence) {
 		r.operations = map[string]*Operation{}
 	}
 
-	database, collection, action, id, field := extractHeaders(request.Headers)
+	database, collection, action, id, condition, field, create := extractHeaders(request.Headers)
 
 	if isNotValidRequest(collection, action) {
 		request.Message.Discard()
 		return
 	}
 
-	key := database + collection + action + id + field
+	conditionKey := generateConditionKey(condition)
+
+	key := database + collection + action + id + conditionKey + field
 	operation := r.operations[key]
 
 	if operation == nil {
@@ -47,10 +53,13 @@ func (r *Repository) Save(request mensageria.RequestPersistence) {
 			Action:     action,
 			Field:      field,
 			ID:         id,
+			Condition:  condition,
 		}
 	}
 
 	operation.Messages = append(operation.Messages, request.Message)
+	operation.Create = create
+
 	r.operations[key] = operation
 	r.size++
 }
@@ -117,13 +126,19 @@ func (os *Operation) Confirm() {
 	})
 }
 
-func extractHeaders(headers map[string]interface{}) (database, collection, action, id, field string) {
+func extractHeaders(headers map[string]interface{}) (database, collection, action, id,
+	condition, field string, create bool) {
 
 	database = extract(headers["database"])
 	collection = extract(headers["collection"])
 	action = extract(headers["action"])
 	id = extract(headers["id"])
+	condition = extract(headers["condition"])
 	field = extract(headers["field"])
+
+	if extract(headers["create"]) != "" {
+		create = true
+	}
 
 	return
 }
@@ -140,4 +155,15 @@ func extract(value interface{}) string {
 
 func isNotValidRequest(collection, action string) bool {
 	return collection == "" || action == ""
+}
+
+func generateConditionKey(conditionValue string) string {
+
+	if conditionValue != "" {
+		hasher := md5.New()
+		hasher.Write([]byte(conditionValue))
+		return hex.EncodeToString(hasher.Sum(nil))
+	}
+
+	return ""
 }

@@ -1,6 +1,7 @@
 package dispatch
 
 import (
+	"encoding/json"
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"m2m-lazypersistence/internal/pkg/util"
@@ -56,7 +57,7 @@ func push(collection *mgo.Collection, operation repo.Operation) error {
 		},
 	}
 
-	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), pushToArray)
+	err := resolveUpdate(collection, operation.Create, operation.ID, operation.Condition, pushToArray)
 
 	return err
 }
@@ -72,7 +73,7 @@ func pull(collection *mgo.Collection, operation repo.Operation) error {
 		},
 	}
 
-	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), pullToArray)
+	err := resolveUpdate(collection, operation.Create, operation.ID, operation.Condition, pullToArray)
 
 	return err
 }
@@ -130,7 +131,7 @@ func increment(collection *mgo.Collection, operation repo.Operation) error {
 		"$inc": increments,
 	}
 
-	err := collection.UpdateId(bson.ObjectIdHex(operation.ID), incrementToField)
+	err := resolveUpdate(collection, operation.Create, operation.ID, operation.Condition, incrementToField)
 
 	return err
 }
@@ -148,4 +149,73 @@ func selectCollection(dispatcher *Dispatcher, operation repo.Operation) (collect
 	collection = dispatcher.session.DB(database).C(operation.Collection)
 
 	return
+}
+
+func checkCondition(conditionValue string, condition *map[string]interface{}) error {
+
+	err := json.Unmarshal([]byte(conditionValue), condition)
+
+	return err
+}
+
+func resolveUpdate(collection *mgo.Collection, created bool, id string, conditionValue string, actionFields bson.M) error {
+
+	var idDocument interface{}
+
+	if id != "" {
+		if bson.IsObjectIdHex(id) {
+			idDocument = bson.ObjectIdHex(id)
+		} else {
+			idDocument = id
+		}
+
+		if created {
+			_, err := collection.UpsertId(idDocument, actionFields)
+			return err
+		}
+
+		return collection.UpdateId(idDocument, actionFields)
+	}
+
+	var condition map[string]interface{}
+
+	if conditionValue != "" {
+		err := checkCondition(conditionValue, &condition)
+
+		if err != nil {
+			return err
+		}
+
+		fields := bson.M{}
+
+		for key, value := range condition {
+
+			_, ok := value.(string)
+
+			if ok {
+				fields[key] = value
+			} else {
+				number, ok := value.(float64)
+				if ok {
+					if util.CheckDecimal(number) {
+						fields[key] = value
+					} else {
+						fields[key] = int(number)
+					}
+				}
+			}
+
+		}
+
+		actionFields["$set"] = fields
+
+		if created {
+			_, err := collection.Upsert(condition, actionFields)
+			return err
+		}
+
+		return collection.Update(condition, actionFields)
+	}
+
+	return nil
 }
