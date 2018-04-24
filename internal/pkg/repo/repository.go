@@ -135,10 +135,7 @@ func extractHeaders(headers map[string]interface{}) (database, collection, actio
 	id = extract(headers["id"])
 	condition = extract(headers["condition"])
 	field = extract(headers["field"])
-
-	if extract(headers["create"]) != "" {
-		create = true
-	}
+	create = extractBool(headers["create"])
 
 	return
 }
@@ -151,6 +148,16 @@ func extract(value interface{}) string {
 	}
 
 	return ""
+}
+
+func extractBool(value interface{}) bool {
+	v, ok := value.(bool)
+
+	if ok {
+		return v
+	}
+
+	return false
 }
 
 func isNotValidRequest(collection, action string) bool {
