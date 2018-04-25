@@ -106,7 +106,7 @@ O novo Lazypersistence suporta os seguintes metadados: <br/><br/>
 <td>action</td><td>Define a ação a ser realizada sobre a mensagem enviada.</td><td>insert,push,pull ou increment</td>
 </tr>
 <tr>
-<td>database</td><td>Define o bando de dados onde o documento será persistido. Se o banco não for especificado, o Lazypersistence levará em consideração o banco de dados especificado no arquivo de configuração</td><td>frota_znd, monitriip_znd, etc</td>
+<td>database</td><td>Define o banco de dados onde o documento será persistido. Se o banco não for especificado, o Lazypersistence levará em consideração o banco de dados especificado no arquivo de configuração</td><td>frota_znd, monitriip_znd, etc</td>
 </tr>
 <tr>
 <td>collection</td><td>Define a coleção onde o documento será persistido.</td><td>Transmissao, Bilhetes, etc</td>
