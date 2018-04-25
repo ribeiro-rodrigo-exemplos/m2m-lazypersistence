@@ -106,7 +106,7 @@ O novo Lazypersistence suporta os seguintes metadados: <br/><br/>
 <td>action</td><td>Define a ação a ser realizada sobre a mensagem enviada.</td><td>insert,push,pull ou increment</td>
 </tr>
 <tr>
-<td>database</td><td>Define o bando de dados onde o documento será persistido.</td><td>frota_znd, monitriip_znd, etc</td>
+<td>database</td><td>Define o bando de dados onde o documento será persistido. Se o banco não for especificado, o Lazypersistence levará em consideração o banco de dados especificado no arquivo de configuração</td><td>frota_znd, monitriip_znd, etc</td>
 </tr>
 <tr>
 <td>collection</td><td>Define a coleção onde o documento será persistido.</td><td>Transmissao, Bilhetes, etc</td>
@@ -129,24 +129,89 @@ O campo deverá ser um array</td><td>viagens</td>
 </tr>
 </table>
 
-<h2>Ações</h2>
+<h2>Actions</h2>
 
 - Increment <br/>
-A action increment serve para incrementar valores de forma preguiçosa em um documento, os valores de incremento são passados no corpo da mensagem. 
+A action increment serve para incrementar valores de forma "preguiçosa" em um documento, os valores de incremento são passados no corpo da mensagem. 
 Considere a seguinte mensagem AMQP: 
 
 <b>Headers</b><br/>
+<pre>
 action: increment<br/>
 condition: {"empresa":"m2m"}<br/>
 collection: empresas<br/>
 database: frota_znd<br/>
 create: true <br/>
+</pre>
 <b>Payload</b><br/>
-{"qtdProjetos":1,"qtdFuncionarios":5,"qtdDepartamentos":2}<br/>
+<pre>{"qtdProjetos":1,"qtdFuncionarios":5,"qtdDepartamentos":2}</pre><br/>
 
 O Lazypersistence irá incrementar os valores passados nas colunas referenciadas no payload da mensagem e criar o documento caso o mesmo ainda não exista.
-O documento criada no mongo será algo parecido com este: 
+O documento criado no mongo será algo parecido com este: 
 
 <pre>
 {"qtdProjetos":1,"qtdFuncionarios":5,"qtdDepartamentos":2,"empresa":"m2m"}
 </pre>
+
+- Push <br/>
+A action push serve para adicionar valores ou objetos em um array. 
+Considere a seguinte mensagem AMQP: 
+
+<b>Headers</b><br/>
+<pre>
+action: push<br/>
+id: 5adf8d3b1ddeb5b732f5caf5<br/>
+collection: empresas<br/>
+database: frota_znd<br/>
+field: funcionarios<br/>
+</pre>
+<b>Payload</b><br/>
+<pre>{"nome":"João",idade:27}</pre><br/>
+
+O Lazypersistence irá selecionar o documento referenciado pelo metadado id e irá adicionar um elemento no array definido no header field. O resultado
+final seria parecido com este. 
+
+<pre>
+{"_id":ObjectId("5adf8d3b1ddeb5b732f5caf5"),"funcionarios":[{"nome":"João",idade:27}]}
+</pre>
+
+- Pull <br/>
+O Lazypersistence irá selecionar o documento através do critério especificado no header condition e irá remover um elemento no array definido no header field. O resultado
+final seria parecido com este. 
+
+<b>Headers</b><br/>
+<pre>
+action: increment<br/>
+condition: {"empresa":"m2m"}<br/>
+collection: empresas<br/>
+database: frota_znd<br/>
+create: true <br/>
+</pre>
+<b>Payload</b><br/>
+<pre>{"nome":"João",idade:27}</pre><br/>
+
+O Lazypersistence irá incrementar os valores passados nas colunas referenciadas no payload da mensagem e criar o documento caso o mesmo ainda não exista.
+O documento criado no mongo será algo parecido com este: <br/>
+<br/>
+Antes<br/>
+<pre>
+{..."funcionarios":[{"nome":"João",idade:27},{"nome":"Maria",idade:30}]}
+</pre>
+Depois<br/>
+<pre>
+{..."funcionarios":[{"nome":"Maria",idade:30}]}
+</pre>
+
+- Insert <br/>
+A action insert serve para inserir documentos de forma "preguiçosa" em uma coleção no MongoDB. Considere a seguinte mensagem AMQP: <br/>
+
+<b>Headers</b><br/>
+<pre>
+action: insert<br/>
+collection: empresas<br/>
+database: monitriip<br/>
+</pre>
+<b>Payload</b><br/>
+<pre>{"idLog":7,"tipoRegistroViagem":1,"dataHoraEvento":"2017-10-17T10:43:00"}</pre><br/>
+
+O Lazypersistence irá inserir o documento na collection e no database especificado nos headers informados.  
