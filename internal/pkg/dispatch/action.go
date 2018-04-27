@@ -5,7 +5,6 @@ import (
 	"m2m-lazypersistence/internal/pkg/mensageria"
 	"m2m-lazypersistence/internal/pkg/repo"
 	"m2m-lazypersistence/internal/pkg/util"
-	"reflect"
 	"strings"
 
 	"gopkg.in/mgo.v2"
@@ -92,39 +91,52 @@ func increment(collection *mgo.Collection, operation repo.Operation) error {
 
 		for entryKey, entryValue := range entries {
 
-			value := entryValue.(float64)
-
-			v, ok := increments[entryKey]
+			number, ok := entryValue.(json.Number)
 
 			if !ok {
-				if util.CheckDecimal(value) {
-					increments[entryKey] = value
+				continue
+			}
+
+			oldValue, ok := increments[entryKey]
+
+			if !ok {
+				if util.CheckDecimalNumber(number) {
+					decimalNumber, _ := number.Float64()
+					increments[entryKey] = decimalNumber
 				} else {
-					increments[entryKey] = int(value)
+					intNumber, _ := number.Int64()
+					increments[entryKey] = intNumber
 				}
 
 				continue
 			}
 
-			var vConv float64
+			if util.CheckDecimalInterface(oldValue) {
+				if util.CheckDecimalNumber(number) {
+					newDecimalNumber, _ := number.Float64()
+					oldDecimalNumber := oldValue.(float64)
+					increments[entryKey] = oldDecimalNumber + newDecimalNumber
+				} else {
+					newDecimalNumber, _ := number.Int64()
+					oldDecimalNumber := oldValue.(float64)
+					increments[entryKey] = oldDecimalNumber + float64(newDecimalNumber)
+				}
 
-			if reflect.TypeOf(v) == reflect.TypeOf(1.0) {
-				vConv = v.(float64)
-			} else {
-				vConv = float64(v.(int))
-			}
-
-			if util.CheckDecimal(vConv) {
-				increments[entryKey] = vConv + value
 				continue
 			}
 
-			if util.CheckDecimal(value) {
-				increments[entryKey] = float64(vConv) + float64(value)
-			} else {
-				increments[entryKey] = int(vConv) + int(value)
+			oldIntNumber, _ := oldValue.(int64)
+
+			if util.CheckDecimalNumber(number) {
+				newDecimalNumber, _ := number.Float64()
+				increments[entryKey] = float64(oldIntNumber) + newDecimalNumber
+				continue
 			}
+
+			newIntNumber, _ := number.Int64()
+			increments[entryKey] = oldIntNumber + newIntNumber
 		}
+
 	})
 
 	incrementToField := bson.M{

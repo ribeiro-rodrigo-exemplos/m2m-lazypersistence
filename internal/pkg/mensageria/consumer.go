@@ -1,6 +1,7 @@
 package mensageria
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"m2m-lazypersistence/internal/pkg/config"
@@ -70,7 +71,10 @@ func (c *Consumer) openChannels(listener Listener) {
 		go func() {
 			for m := range messages {
 				message := Message{delivery: m}
-				err := json.Unmarshal(m.Body, &message.Payload)
+				buffer := bytes.NewReader(m.Body)
+				decoder := json.NewDecoder(buffer)
+				decoder.UseNumber()
+				err := decoder.Decode(&message.Payload)
 
 				if err != nil {
 					log.Printf("Erro ao deserializar mensagem %s\n", err)

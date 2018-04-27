@@ -157,6 +157,12 @@ func extractBool(value interface{}) bool {
 		return v
 	}
 
+	s, ok := value.(string)
+
+	if ok {
+		return s == "true"
+	}
+
 	return false
 }
 
