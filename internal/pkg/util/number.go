@@ -14,6 +14,7 @@ func CheckDecimal(number float64) bool {
 	return false
 }
 
+//CheckDecimalInterface - verifica se a interface é um número decimal
 func CheckDecimalInterface(numberInterface interface{}) bool {
 	numberFloat, ok := numberInterface.(float64)
 
@@ -24,6 +25,7 @@ func CheckDecimalInterface(numberInterface interface{}) bool {
 	return CheckDecimal(numberFloat)
 }
 
+//CheckDecimalNumber - verifica se o json.Number é um numero decimal
 func CheckDecimalNumber(number json.Number) bool {
 
 	_, err := number.Int64()
