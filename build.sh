@@ -1,0 +1,1 @@
+docker build --build-arg PROJECT=m2m-lazypersistence -t m2msolutions-docker.jfrog.io/m2m-lazypersistence:1.0.0 .
