@@ -35,7 +35,7 @@ func loadConfig(configLocation string) config.Config {
 }
 
 func loadFlags() (string, string) {
-	configLocation := flag.String("config-location", "./configs/config.yml", "a string")
+	configLocation := flag.String("config-location", "./configs/config.json", "a string")
 	environment := flag.String("m2m-environment", "DEVELOPMENT", "a string")
 	flag.Parse()
 

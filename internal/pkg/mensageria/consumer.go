@@ -13,21 +13,21 @@ import (
 
 // Consumer - Consumidor de mensagens do Rabbitmq
 type Consumer struct {
-	Host       string
-	Port       int
-	User       string
-	Password   string
-	Queue      string
-	Queues     []config.QueueConfig
-	connection connection
+	Host          string
+	Port          int
+	User          string
+	Password      string
+	PrefetchCount int
+	Queues        []config.QueueConfig
+	connection    connection
 }
 
 // Listener - chamado quando uma mensagem for recebida
 type Listener func(request RequestPersistence)
 
 type connection struct {
-	conn     *amqp.Connection
-	channels []*amqp.Channel
+	conn    *amqp.Connection
+	channel *amqp.Channel
 }
 
 // Connect - conecta consumidor ao rabbitmq
@@ -52,18 +52,18 @@ func (c *Consumer) Connect(listener Listener) {
 
 // Disconnect - desconecta consumidor do rabbitmq
 func (c *Consumer) Disconnect() {
-	for _, channel := range c.connection.channels {
-		channel.Close()
+	if c.connection.channel != nil {
+		c.connection.conn.Close()
+		c.connection.channel = nil
 	}
-	c.connection.conn.Close()
-	c.connection.channels = make([]*amqp.Channel, 0)
 }
 
 func (c *Consumer) openChannels(listener Listener) {
 
+	channel := c.openChannel()
+
 	for _, queue := range c.Queues {
 
-		channel := c.openChannel()
 		messages := c.createConsumer(channel, queue)
 
 		log.Println("Ouvindo mensagens da fila", queue.Name)
@@ -87,15 +87,26 @@ func (c *Consumer) openChannels(listener Listener) {
 			}
 		}()
 
-		c.connection.channels = append(c.connection.channels, channel)
+		c.connection.channel = channel
 	}
 }
 
 func (c *Consumer) openChannel() *amqp.Channel {
 
 	channel, err := c.connection.conn.Channel()
+
 	if err != nil {
 		log.Fatal("Erro ao criar canal no rabbitmq -", err)
+	}
+
+	err = channel.Qos(
+		c.PrefetchCount,
+		0,
+		false,
+	)
+
+	if err != nil {
+		log.Fatal("Erro ao configurar prefetch do canal -", err)
 	}
 
 	return channel

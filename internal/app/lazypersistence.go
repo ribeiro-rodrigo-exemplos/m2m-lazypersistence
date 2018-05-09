@@ -10,8 +10,8 @@ import (
 )
 
 var repository repo.Repository
-var channelRequest = make(chan mensageria.RequestPersistence, 30)
-var signalDispatcher = make(chan struct{})
+var channelRequest chan mensageria.RequestPersistence
+var signalDispatcher chan struct{}
 
 var maxMessages int
 var retentionTime int
@@ -23,6 +23,9 @@ func Bootstrap(config cfg.Config) {
 
 	maxMessages = config.MaxMessages
 	retentionTime = config.RetentionSeconds
+
+	channelRequest = make(chan mensageria.RequestPersistence, config.MaxMessages)
+	signalDispatcher = make(chan struct{})
 
 	createConsumers(config)
 
@@ -78,11 +81,12 @@ func evaluateDispatch() {
 func createConsumers(config cfg.Config) {
 
 	consumer := mensageria.Consumer{
-		Host:     config.RabbitMQ.Host,
-		Port:     config.RabbitMQ.Port,
-		User:     config.RabbitMQ.User,
-		Password: config.RabbitMQ.Password,
-		Queues:   config.RabbitMQ.Queues,
+		Host:          config.RabbitMQ.Host,
+		Port:          config.RabbitMQ.Port,
+		User:          config.RabbitMQ.User,
+		PrefetchCount: config.MaxMessages * 2,
+		Password:      config.RabbitMQ.Password,
+		Queues:        config.RabbitMQ.Queues,
 	}
 
 	consumer.Connect(listener)
